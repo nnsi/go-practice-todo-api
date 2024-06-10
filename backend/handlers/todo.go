@@ -89,5 +89,5 @@ func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	WriteJSONResponse(w, map[string]string{"id": id})
 }
