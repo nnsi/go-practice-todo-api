@@ -28,7 +28,7 @@ func NewTodoRDBRepository(dsn string) (*TodoRDBRepository, error) {
 
 func (r *TodoRDBRepository) Index() ([]models.Todo, error) {
 	var todos []models.Todo
-	result := r.db.Find(&todos)
+	result := r.db.Order("id asc").Find(&todos)
 	return todos, result.Error
 }
 
