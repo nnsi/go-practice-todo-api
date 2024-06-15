@@ -26,13 +26,18 @@ func NewTodoRDBRepository(dsn string) (*TodoRDBRepository, error) {
 	return &TodoRDBRepository{db: db}, nil
 }
 
-func (r *TodoRDBRepository) Index() ([]models.Todo, error) {
+func (r *TodoRDBRepository) FindAll(isShowDeleted bool) ([]models.Todo, error) {
 	var todos []models.Todo
+	if isShowDeleted {
+		// 削除済みのTodoも取得する
+		result := r.db.Unscoped().Order("id asc").Find(&todos)
+		return todos, result.Error
+	}
 	result := r.db.Order("id asc").Find(&todos)
 	return todos, result.Error
 }
 
-func (r *TodoRDBRepository) Show(id string) (*models.Todo, error) {
+func (r *TodoRDBRepository) FindByID(id string) (*models.Todo, error) {
 	var todo models.Todo
 	result := r.db.First(&todo, "id = ?", id)
 	if result.Error != nil {

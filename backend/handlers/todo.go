@@ -15,7 +15,8 @@ func NewTodoHandler(service *services.TodoService) *TodoHandler {
 }
 
 func (h *TodoHandler) Index(w http.ResponseWriter, r *http.Request) {
-	todos, err := h.service.Index()
+	isShowDeleted := r.URL.Query().Get("show-deleted") == "1"
+	todos, err := h.service.Index(isShowDeleted)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

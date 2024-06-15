@@ -24,12 +24,12 @@ func (s *TodoService) generateULID() string {
 	return ulid.MustNew(ulid.Timestamp(t), entropy).String()
 }
 
-func (s *TodoService) Index() ([]models.Todo, error) {
-	return s.repo.Index()
+func (s *TodoService) Index(isShowDeleted bool) ([]models.Todo, error) {
+	return s.repo.FindAll(isShowDeleted)
 }
 
 func (s *TodoService) Show(id string) (*models.Todo, error) {
-	return s.repo.Show(id)
+	return s.repo.FindByID(id)
 }
 
 func (s *TodoService) Create(title string) (*models.Todo, error) {
@@ -43,7 +43,7 @@ func (s *TodoService) Create(title string) (*models.Todo, error) {
 }
 
 func (s *TodoService) Update(id string, title string, completed bool) (*models.Todo, error) {
-	todo, err := s.repo.Show(id)
+	todo, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}

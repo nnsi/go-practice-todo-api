@@ -6,8 +6,8 @@ import "go-practice-todo/models"
 // data storage provider needs to implement to get
 // and store todos.
 type TodoRepositoryInterface interface {
-	Index() ([]models.Todo, error)
-	Show(id string) (*models.Todo, error)
+	FindAll(isShowDeleted bool) ([]models.Todo, error)
+	FindByID(id string) (*models.Todo, error)
 	Create(todo *models.Todo) error
 	Update(todo *models.Todo) error
 	Delete(id string) error
