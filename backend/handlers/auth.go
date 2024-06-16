@@ -89,8 +89,13 @@ func (h *AuthHandler) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// should not use built-in type string as key for value の解消
+		// 独自の型を使ってキーを定義する
+		type contextKey string
+		const userContextKey contextKey = "user"
+
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), "user", claims["username"])
+			ctx := context.WithValue(r.Context(), userContextKey, claims["username"])
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			http.Error(w, "無効なアクセスです", http.StatusUnauthorized)
