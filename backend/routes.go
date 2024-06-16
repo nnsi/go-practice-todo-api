@@ -24,7 +24,7 @@ func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler
 	http.HandleFunc("/register", authHandler.Register)
 	http.HandleFunc("/login", authHandler.Login)
 
-	http.HandleFunc("OPTIONS /api", RequestOptions)
+	http.HandleFunc("OPTIONS /todos", RequestOptions)
 
 	http.Handle("GET /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Index), authHandler.AuthMiddleware))
 	http.Handle("POST /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Create), authHandler.AuthMiddleware))
