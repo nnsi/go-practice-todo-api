@@ -12,12 +12,23 @@ func RequestOptions(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func Routes(handler *handlers.TodoHandler) {
-	http.HandleFunc("/", handler.Index)
-	http.HandleFunc("GET /todos", handler.Index)
-	http.HandleFunc("OPTIONS /todos", RequestOptions)
-	http.HandleFunc("POST /todos", handler.Create)
-	http.HandleFunc("GET /todos/{id}", handler.Show)
-	http.HandleFunc("PUT /todos/{id}", handler.Update)
-	http.HandleFunc("DELETE /todos/{id}", handler.Delete)
+func ChainMiddleware(handler http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
+	for _, middleware := range middlewares {
+		handler = middleware(handler)
+	}
+	return handler
+}
+
+func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler) {
+
+	http.HandleFunc("/register", authHandler.Register)
+	http.HandleFunc("/login", authHandler.Login)
+
+	http.HandleFunc("OPTIONS /api", RequestOptions)
+
+	http.Handle("GET /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Index), authHandler.AuthMiddleware))
+	http.Handle("POST /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Create), authHandler.AuthMiddleware))
+	http.Handle("GET /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Show), authHandler.AuthMiddleware))
+	http.Handle("PUT /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Update), authHandler.AuthMiddleware))
+	http.Handle("DELETE /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Delete), authHandler.AuthMiddleware))
 }
