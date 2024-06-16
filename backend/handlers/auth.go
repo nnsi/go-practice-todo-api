@@ -70,8 +70,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Authorization", "Bearer "+token)
-	w.WriteHeader(http.StatusOK)
-	WriteJSONResponse(w, token)
+	WriteJSONResponse(w, map[string]string{"token": token})
 }
 
 func (h *AuthHandler) AuthMiddleware(next http.Handler) http.Handler {
