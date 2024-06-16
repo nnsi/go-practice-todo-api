@@ -1,85 +1,68 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { TodoApp } from "../components/TodoApp";
 
-function App() {
-  const [todos, setTodos] = useState([] as any[]);
+const LoginForm: React.FC<{ setToken: (token: string) => void }> = ({
+  setToken,
+}) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  useEffect(() => {
-    fetch("http://localhost:8080/todos")
-      .then((response) => response.json())
-      .then((data) => setTodos(data));
-  }, []);
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          const req = await fetch("http://localhost:8080/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ login_id: username, password }),
+          });
+          const data = await req.json();
+          console.log(data.token);
+          setToken(data.token);
+          localStorage.setItem("token", data.token);
+        } catch (e) {
+          console.error(e);
+        }
+      }}
+    >
+      <input
+        type="text"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <button type="submit">認証</button>
+    </form>
+  );
+};
+
+const App: React.FC = () => {
+  const [token, setToken] = useState(localStorage.getItem("token"));
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+  };
 
   return (
     <>
-      <form
-        action={async (formData: FormData) => {
-          try {
-            const req = await fetch("http://localhost:8080/todos", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ title: formData.get("title") }),
-            });
-            const data = await req.json();
-            setTodos([...todos, data]);
-          } catch (e) {
-            console.error(e);
-          }
-          return false;
-        }}
-      >
-        <input type="text" name="title" />
-        <button type="submit">Add</button>
-      </form>
-      <ul>
-        {todos.map((todo: any) => (
-          <li key={todo.id}>
-            <span
-              onClick={async () => {
-                try {
-                  await fetch(`http://localhost:8080/todos/${todo.id}`, {
-                    method: "PUT",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ completed: !todo.completed }),
-                  });
-                  setTodos(
-                    todos.map((t) => {
-                      if (t.id === todo.id) {
-                        return { ...t, completed: !t.completed };
-                      }
-                      return t;
-                    })
-                  );
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-              style={todo.completed ? { textDecoration: "line-through" } : {}}
-            >
-              {todo.title}
-            </span>
-            <button
-              onClick={async () => {
-                try {
-                  await fetch(`http://localhost:8080/todos/${todo.id}`, {
-                    method: "DELETE",
-                  });
-                  setTodos(todos.filter((t) => t.id !== todo.id));
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-            >
-              DELETE
-            </button>
-          </li>
-        ))}
-      </ul>
+      {token && (
+        <>
+          <TodoApp token={token} />
+          <hr />
+          <button onClick={handleLogout}>ログアウト</button>
+        </>
+      )}
+      {!token && <LoginForm setToken={setToken} />}
     </>
   );
-}
+};
 
 export default App;

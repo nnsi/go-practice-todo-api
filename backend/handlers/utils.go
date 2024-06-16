@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -10,13 +11,14 @@ func WriteJSONResponse(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, priority")
 	json.NewEncoder(w).Encode(data)
 }
 
 func RequestOptions(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	log.Println("OPTIONS")
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, priority")
 	w.WriteHeader(http.StatusOK)
 }
