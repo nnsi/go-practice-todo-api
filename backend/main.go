@@ -11,13 +11,21 @@ import (
 func main() { 
 	// repo := repositories.NewTodoRepository()
 	dsn := "host=localhost user=postgres password=postgres dbname=todoapp port=5432 TimeZone=Asia/Tokyo"
-	repo, err := repositories.NewTodoRDBRepository (dsn) 
+	todoRepo, err := repositories.NewTodoRDBRepository (dsn) 
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
-	service := services.NewTodoService(repo)
-	handler := handlers.NewTodoHandler(service)
-	Routes(handler)
+	todoService := services.NewTodoService(todoRepo)
+	todoHandler := handlers.NewTodoHandler(todoService)
+
+	userRepo, err := repositories.NewUserRepository(dsn)
+	if err != nil {
+		log.Fatalf("failed to connect database: %v", err)
+	}
+	userService := services.NewUserService(userRepo, "secret")
+	authHandler := handlers.NewAuthHandler(userService)
+	
+	Routes(todoHandler, authHandler)
 
 	http.ListenAndServe("localhost:8080", nil)
 }

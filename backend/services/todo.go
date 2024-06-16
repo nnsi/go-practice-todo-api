@@ -1,13 +1,8 @@
 package services
 
 import (
-	"math/rand"
-	"time"
-
 	"go-practice-todo/models"
 	"go-practice-todo/repositories"
-
-	"github.com/oklog/ulid/v2"
 )
 
 type TodoService struct {
@@ -16,12 +11,6 @@ type TodoService struct {
 
 func NewTodoService(repo repositories.TodoRepositoryInterface) *TodoService {
 	return &TodoService{repo: repo}
-}
-
-func (s *TodoService) generateULID() string {
-	t := time.Now().UTC()
-	entropy := rand.New(rand.NewSource(t.UnixNano()))
-	return ulid.MustNew(ulid.Timestamp(t), entropy).String()
 }
 
 func (s *TodoService) Index(isShowDeleted bool) ([]models.Todo, error) {
@@ -34,7 +23,7 @@ func (s *TodoService) Show(id string) (*models.Todo, error) {
 
 func (s *TodoService) Create(title string) (*models.Todo, error) {
 	todo := &models.Todo{
-		ID:        s.generateULID(),
+		ID:        GenerateULID(),
 		Title:     title,
 		Completed: false,
 	}
