@@ -35,12 +35,24 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSONResponse(w, user)
+	tokenUser := &models.User{
+		LoginID:  user.LoginID,
+		Name:     user.Username,
+		Password: user.Password,
+	}
+
+	token, err := h.service.GenerateToken(tokenUser)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	WriteJSONResponse(w, map[string]string{"token": token})
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		LoginID string `json:"login_id"`
+		LoginID  string `json:"login_id"`
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
