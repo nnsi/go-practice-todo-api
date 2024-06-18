@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"go-practice-todo/middleware"
 	"go-practice-todo/services"
 	"net/http"
 )
@@ -15,8 +16,9 @@ func NewTodoHandler(service *services.TodoService) *TodoHandler {
 }
 
 func (h *TodoHandler) Index(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserFromContext(r.Context())
 	isShowDeleted := r.URL.Query().Get("show-deleted") == "1"
-	todos, err := h.service.Index(isShowDeleted)
+	todos, err := h.service.Index(isShowDeleted, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -26,7 +28,8 @@ func (h *TodoHandler) Index(w http.ResponseWriter, r *http.Request) {
 
 func (h *TodoHandler) Show(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	todo, err := h.service.Show(id)
+	userID := middleware.GetUserFromContext(r.Context())
+	todo, err := h.service.Show(id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -36,6 +39,7 @@ func (h *TodoHandler) Show(w http.ResponseWriter, r *http.Request) {
 
 func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var fields map[string]interface{}
+	userID := middleware.GetUserFromContext(r.Context())
 	if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
 		WriteJSONResponse(w, "Invalid JSON")
 		return
@@ -47,7 +51,7 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, err := h.service.Create(title)
+	todo, err := h.service.Create(title, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -57,7 +61,8 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		todo, err := h.service.Show(id)
+		userID := middleware.GetUserFromContext(r.Context())
+		todo, err := h.service.Show(id, userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -75,7 +80,7 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 		if completed, ok := fields["completed"].(bool); ok {
 			todo.Completed = completed
 		}
-		todo, err = h.service.Update(id, todo.Title, todo.Completed)
+		todo, err = h.service.Update(id, todo.Title, todo.Completed, userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -85,7 +90,8 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	err := h.service.Delete(id)
+	userID := middleware.GetUserFromContext(r.Context())
+	err := h.service.Delete(id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

@@ -26,20 +26,20 @@ func NewTodoRDBRepository(dsn string) (*TodoRDBRepository, error) {
 	return &TodoRDBRepository{db: db}, nil
 }
 
-func (r *TodoRDBRepository) FindAll(isShowDeleted bool) ([]models.Todo, error) {
+func (r *TodoRDBRepository) FindAll(isShowDeleted bool, userID string) ([]models.Todo, error) {
 	var todos []models.Todo
 	if isShowDeleted {
 		// 削除済みのTodoも取得する
-		result := r.db.Unscoped().Order("id asc").Find(&todos)
+		result := r.db.Unscoped().Order("id asc").Where("user_id = ?", userID).Find(&todos)
 		return todos, result.Error
 	}
-	result := r.db.Order("id asc").Find(&todos)
+	result := r.db.Order("id asc").Where("user_id = ?", userID).Find(&todos)
 	return todos, result.Error
 }
 
-func (r *TodoRDBRepository) FindByID(id string) (*models.Todo, error) {
+func (r *TodoRDBRepository) FindByID(id string, userID string) (*models.Todo, error) {
 	var todo models.Todo
-	result := r.db.First(&todo, "id = ?", id)
+	result := r.db.First(&todo, "id = ? AND user_id = ?", id, userID)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -56,7 +56,7 @@ func (r *TodoRDBRepository) Update(todo *models.Todo) error {
 	return result.Error
 }
 
-func (r *TodoRDBRepository) Delete(id string) error {
-	result := r.db.Delete(&models.Todo{}, "id = ?", id)
+func (r *TodoRDBRepository) Delete(id string, userID string) error {
+	result := r.db.Delete(&models.Todo{}, "id = ? AND user_id = ?", id, userID)
 	return result.Error
 }

@@ -25,7 +25,7 @@ func main() {
 	userService := services.NewUserService(userRepo, "secret")
 	authHandler := handlers.NewAuthHandler(userService)
 	
-	Routes(todoHandler, authHandler)
+	Routes(todoHandler, authHandler, userService)
 
 	http.ListenAndServe("localhost:8080", nil)
 }

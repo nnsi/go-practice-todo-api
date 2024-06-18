@@ -2,6 +2,9 @@ package main
 
 import (
 	"go-practice-todo/handlers"
+	"go-practice-todo/middleware"
+	"go-practice-todo/services"
+
 	"net/http"
 )
 
@@ -19,7 +22,7 @@ func ChainMiddleware(handler http.Handler, middlewares ...func(http.Handler) htt
 	return handler
 }
 
-func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler) {
+func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler, userService *services.UserService) {
 
 	http.HandleFunc("OPTIONS /register", RequestOptions)
 	http.HandleFunc("POST /register", authHandler.Register)
@@ -31,9 +34,9 @@ func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler
 	http.HandleFunc("OPTIONS /todos/", RequestOptions)
 
 
-	http.Handle("GET /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Index), authHandler.AuthMiddleware))
-	http.Handle("POST /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Create), authHandler.AuthMiddleware))
-	http.Handle("GET /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Show), authHandler.AuthMiddleware))
-	http.Handle("PUT /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Update), authHandler.AuthMiddleware))
-	http.Handle("DELETE /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Delete), authHandler.AuthMiddleware))
+	http.Handle("GET /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Index), middleware.AuthMiddleware(userService)))
+	http.Handle("POST /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Create), middleware.AuthMiddleware(userService)))
+	http.Handle("GET /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Show), middleware.AuthMiddleware(userService)))
+	http.Handle("PUT /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Update), middleware.AuthMiddleware(userService)))
+	http.Handle("DELETE /todos/{id}", ChainMiddleware(http.HandlerFunc(todoHandler.Delete), middleware.AuthMiddleware(userService)))
 }

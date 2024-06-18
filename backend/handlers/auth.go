@@ -1,15 +1,11 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"go-practice-todo/models"
 	"go-practice-todo/services"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 type AuthHandler struct {
@@ -71,33 +67,4 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Authorization", "Bearer "+token)
 	WriteJSONResponse(w, map[string]string{"token": token})
-}
-
-func (h *AuthHandler) AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "無効なアクセスです", http.StatusUnauthorized)
-			return
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		token, err := h.service.ValidateToken(tokenString)
-		if err != nil {
-			http.Error(w, "無効なアクセスです", http.StatusUnauthorized)
-			return
-		}
-
-		// should not use built-in type string as key for value の解消
-		// 独自の型を使ってキーを定義する
-		type contextKey string
-		const userContextKey contextKey = "user"
-
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			ctx := context.WithValue(r.Context(), userContextKey, claims["username"])
-			next.ServeHTTP(w, r.WithContext(ctx))
-		} else {
-			http.Error(w, "無効なアクセスです", http.StatusUnauthorized)
-		}
-	})
 }
