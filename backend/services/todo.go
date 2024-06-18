@@ -13,26 +13,27 @@ func NewTodoService(repo repositories.TodoRepositoryInterface) *TodoService {
 	return &TodoService{repo: repo}
 }
 
-func (s *TodoService) Index(isShowDeleted bool) ([]models.Todo, error) {
-	return s.repo.FindAll(isShowDeleted)
+func (s *TodoService) Index(isShowDeleted bool,userID string) ([]models.Todo, error) {
+	return s.repo.FindAll(isShowDeleted, userID)
 }
 
-func (s *TodoService) Show(id string) (*models.Todo, error) {
-	return s.repo.FindByID(id)
+func (s *TodoService) Show(id string,userID string) (*models.Todo, error) {
+	return s.repo.FindByID(id, userID)
 }
 
-func (s *TodoService) Create(title string) (*models.Todo, error) {
+func (s *TodoService) Create(title string, userID string) (*models.Todo, error) {
 	todo := &models.Todo{
 		ID:        GenerateULID(),
 		Title:     title,
 		Completed: false,
+		UserID:    userID,
 	}
 	err := s.repo.Create(todo)
 	return todo, err
 }
 
-func (s *TodoService) Update(id string, title string, completed bool) (*models.Todo, error) {
-	todo, err := s.repo.FindByID(id)
+func (s *TodoService) Update(id string, title string, completed bool, userID string) (*models.Todo, error) {
+	todo, err := s.repo.FindByID(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +43,6 @@ func (s *TodoService) Update(id string, title string, completed bool) (*models.T
 	return todo, err
 }
 
-func (s *TodoService) Delete(id string) error {
-	return s.repo.Delete(id)
+func (s *TodoService) Delete(id string,userID string) error {
+	return s.repo.Delete(id, userID)
 }
