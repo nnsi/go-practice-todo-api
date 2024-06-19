@@ -1,5 +1,64 @@
 import { useEffect, useState } from "react";
 
+const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
+  token,
+}) => {
+  const [todos, setWsTodos] = useState([] as any[]);
+
+  const action = (event: string, data: any) => {
+    switch (event) {
+      case "list":
+        setWsTodos(data);
+        break;
+      case "create":
+        setWsTodos((prev) => [...prev, data]);
+        break;
+      case "update":
+        setWsTodos((prev) =>
+          prev.map((t) => {
+            if (t.id === data.id) {
+              return data;
+            }
+            return t;
+          })
+        );
+        break;
+      case "delete":
+        setWsTodos((prev) => prev.filter((t) => t.id !== data.id));
+        break;
+      default:
+        break;
+    }
+  };
+
+  useEffect(() => {
+    // Open a WebSocket connection
+    const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+    ws.onopen = () => {
+      console.log("WebSocket connection opened");
+      ws.send(JSON.stringify({ event: "get_todos" }));
+    };
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      const data = JSON.parse(message.data);
+      action(message.event, data);
+    };
+    return () => {
+      ws.close();
+    };
+  }, []);
+
+  return (
+    <ul>
+      {todos.map((todo: any) => (
+        <li key={todo.id}>
+          {todo.title} {todo.completed && "✅"}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
   const [todos, setTodos] = useState([] as any[]);
 
@@ -87,6 +146,8 @@ export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
           </li>
         ))}
       </ul>
+      <hr />
+      {todos.length > 0 && <WebSocketTodoList token={token} todos={todos} />}
     </>
   );
 };

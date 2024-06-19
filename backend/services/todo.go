@@ -1,19 +1,26 @@
 package services
 
 import (
+	"encoding/json"
+	"errors"
+	"go-practice-todo/infra"
 	"go-practice-todo/models"
 	"go-practice-todo/repositories"
 )
 
 type TodoService struct {
 	repo repositories.TodoRepositoryInterface
+	Notifier *infra.WebSocketNotifier
 }
 
-func NewTodoService(repo repositories.TodoRepositoryInterface) *TodoService {
-	return &TodoService{repo: repo}
+func NewTodoService(repo repositories.TodoRepositoryInterface, notifier *infra.WebSocketNotifier) *TodoService {
+	return &TodoService{repo: repo, Notifier : notifier}
 }
 
 func (s *TodoService) Index(isShowDeleted bool,userID string) ([]models.Todo, error) {
+	if userID == "" {
+		return nil, errors.New("user not found")
+	}
 	return s.repo.FindAll(isShowDeleted, userID)
 }
 
@@ -29,6 +36,17 @@ func (s *TodoService) Create(title string, userID string) (*models.Todo, error) 
 		UserID:    userID,
 	}
 	err := s.repo.Create(todo)
+
+	data, _err := json.Marshal(todo)
+	if _err != nil {
+		return todo, _err
+	}
+
+	s.Notifier.BroadcastMessage(infra.Message{
+		Event:  "create",
+		Data:   string(data),
+		UserID: userID,
+	})
 	return todo, err
 }
 
@@ -40,9 +58,34 @@ func (s *TodoService) Update(id string, title string, completed bool, userID str
 	todo.Title = title
 	todo.Completed = completed
 	err = s.repo.Update(todo)
+
+	data, _err := json.Marshal(todo)
+	if _err != nil {
+		return todo, _err
+	}
+
+	s.Notifier.BroadcastMessage(infra.Message{
+		Event:  "update",
+		Data:   string(data),
+		UserID: userID,
+	})
+
 	return todo, err
 }
 
 func (s *TodoService) Delete(id string,userID string) error {
-	return s.repo.Delete(id, userID)
+	err := s.repo.Delete(id, userID)
+
+	data, _err := json.Marshal(models.Todo{ID: id})
+	if _err != nil {
+		return err
+	}
+
+	s.Notifier.BroadcastMessage(infra.Message{
+		Event:  "delete",
+		Data:   string(data),
+		UserID: userID,
+	})
+
+	return err
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TodoApp } from "../components/TodoApp";
+import { TodoApp } from "./components/TodoApp";
 
 const LoginForm: React.FC<{ setToken: (token: string) => void }> = ({
   setToken,
