@@ -22,7 +22,10 @@ func ChainMiddleware(handler http.Handler, middlewares ...func(http.Handler) htt
 	return handler
 }
 
-func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler, userService *services.UserService) {
+func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler, wsHandler *handlers.WebSocketHandler, userService *services.UserService) {
+
+	http.HandleFunc("OPTIONS /ws", RequestOptions)
+	http.HandleFunc("GET /ws", wsHandler.HandleConnections)
 
 	http.HandleFunc("OPTIONS /register", RequestOptions)
 	http.HandleFunc("POST /register", authHandler.Register)
@@ -32,7 +35,6 @@ func Routes(todoHandler *handlers.TodoHandler, authHandler *handlers.AuthHandler
 
 	http.HandleFunc("OPTIONS /todos", RequestOptions)
 	http.HandleFunc("OPTIONS /todos/", RequestOptions)
-
 
 	http.Handle("GET /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Index), middleware.AuthMiddleware(userService)))
 	http.Handle("POST /todos", ChainMiddleware(http.HandlerFunc(todoHandler.Create), middleware.AuthMiddleware(userService)))
