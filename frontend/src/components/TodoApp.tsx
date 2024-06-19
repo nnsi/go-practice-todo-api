@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
-  token,
-}) => {
+const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
   const [todos, setWsTodos] = useState([] as any[]);
   const wsRef = useRef<WebSocket | null>(null);
   const wsManualClose = useRef(false);
@@ -110,24 +108,12 @@ const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
 };
 
 export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
-  const [todos, setTodos] = useState([] as any[]);
-
-  useEffect(() => {
-    fetch("http://localhost:8080/todos", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => setTodos(data));
-  }, []);
-
   return (
     <>
       <form
         action={async (formData: FormData) => {
           try {
-            const req = await fetch("http://localhost:8080/todos", {
+            await fetch("http://localhost:8080/todos", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -135,8 +121,6 @@ export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
               },
               body: JSON.stringify({ title: formData.get("title") }),
             });
-            const data = await req.json();
-            setTodos([...todos, data]);
           } catch (e) {
             console.error(e);
           }
@@ -146,7 +130,7 @@ export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
         <input type="text" name="title" />
         <button type="submit">Add</button>
       </form>
-      <WebSocketTodoList token={token} todos={todos} />
+      <WebSocketTodoList token={token} />
     </>
   );
 };
