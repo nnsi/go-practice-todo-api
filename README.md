@@ -2,10 +2,11 @@
 
 ## API Server
 
-- air を利用したホットリロード
-  - windows の場合は`air -c .air.windows.toml`
-  - それ以外は`air`
-- `localhost:8080`で起動
+```bash
+$ docker-compose build
+$ docker-compose up -d
+$ docker-compose exec backend air
+```
 
 ### API 仕様
 
@@ -21,3 +22,9 @@
 
 - React 19 + Vite
 - `localhost:5173`で起動
+
+```bash
+$ cd frontend
+$ npm install
+$ npm run dev
+```
