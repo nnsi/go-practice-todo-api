@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
   token,
 }) => {
   const [todos, setWsTodos] = useState([] as any[]);
-  const [ws, setWs] = useState(null as WebSocket | null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsConnected = useRef(false);
 
   const action = (event: string, data: any) => {
     switch (event) {
@@ -35,28 +36,32 @@ const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
   useEffect(() => {
     // Open a WebSocket connection
     const connect = () => {
-      const wsInstance = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
-      wsInstance.onopen = () => {
+      if (wsConnected.current) {
+        return;
+      }
+      wsRef.current = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+
+      console.log("set_ws");
+      wsRef.current.onopen = () => {
         console.log("WebSocket connection opened");
-        wsInstance.send(JSON.stringify({ event: "get_todos" }));
+        wsConnected.current = true;
+        wsRef.current?.send(JSON.stringify({ event: "get_todos" }));
       };
-      wsInstance.onmessage = (event) => {
+      wsRef.current.onmessage = (event) => {
         const message = JSON.parse(event.data);
         const data = JSON.parse(message.data);
         action(message.event, data);
       };
-      wsInstance.onclose = () => {
-        console.log("WebSocket connection closed");
-        setWs(null);
-        setTimeout(() => connect(), 3000);
+      wsRef.current.onerror = (e) => {
+        console.log("WebSocket connection closed", e);
+        if (!wsConnected.current) setTimeout(() => connect(), 3000);
       };
     };
-
     connect();
 
     return () => {
-      if (ws) {
-        ws.close();
+      if (wsRef.current) {
+        wsRef.current.close();
       }
     };
   }, []);
@@ -65,7 +70,41 @@ const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
     <ul>
       {todos.map((todo: any) => (
         <li key={todo.id}>
-          {todo.title} {todo.completed && "✅"}
+          <span
+            onClick={async () => {
+              try {
+                await fetch(`http://localhost:8080/todos/${todo.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ completed: !todo.completed }),
+                });
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+          >
+            {todo.title}
+          </span>
+          {todo.completed && "✅"}
+          <button
+            onClick={async () => {
+              try {
+                await fetch(`http://localhost:8080/todos/${todo.id}`, {
+                  method: "DELETE",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                });
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+          >
+            DELETE
+          </button>
         </li>
       ))}
     </ul>
@@ -109,58 +148,7 @@ export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
         <input type="text" name="title" />
         <button type="submit">Add</button>
       </form>
-      <ul>
-        {todos.map((todo: any) => (
-          <li key={todo.id}>
-            <span
-              onClick={async () => {
-                try {
-                  await fetch(`http://localhost:8080/todos/${todo.id}`, {
-                    method: "PUT",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ completed: !todo.completed }),
-                  });
-                  setTodos(
-                    todos.map((t) => {
-                      if (t.id === todo.id) {
-                        return { ...t, completed: !t.completed };
-                      }
-                      return t;
-                    })
-                  );
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-              style={todo.completed ? { textDecoration: "line-through" } : {}}
-            >
-              {todo.title}
-            </span>
-            <button
-              onClick={async () => {
-                try {
-                  await fetch(`http://localhost:8080/todos/${todo.id}`, {
-                    method: "DELETE",
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  });
-                  setTodos(todos.filter((t) => t.id !== todo.id));
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-            >
-              DELETE
-            </button>
-          </li>
-        ))}
-      </ul>
-      <hr />
-      {todos.length > 0 && <WebSocketTodoList token={token} todos={todos} />}
+      <WebSocketTodoList token={token} todos={todos} />
     </>
   );
 };
