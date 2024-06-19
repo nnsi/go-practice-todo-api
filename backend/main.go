@@ -13,7 +13,7 @@ const JWT_SECRET = "secret"
 
 func main() {
 
-	dsn := "host=localhost user=postgres password=postgres dbname=todoapp port=5432 TimeZone=Asia/Tokyo"
+	dsn := "host=db user=postgres password=postgres dbname=todoapp port=5432 TimeZone=Asia/Tokyo"
 
 	notifier := infra.NewWebSocketNotifier()
 	notifier.Start()
@@ -36,5 +36,5 @@ func main() {
 
 	Routes(todoHandler, authHandler, wsHandler, userService)
 
-	http.ListenAndServe("localhost:8080", nil)
+	http.ListenAndServe("0.0.0.0:8080", nil)
 }
