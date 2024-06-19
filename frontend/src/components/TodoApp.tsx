@@ -4,6 +4,7 @@ const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
   token,
 }) => {
   const [todos, setWsTodos] = useState([] as any[]);
+  const [ws, setWs] = useState(null as WebSocket | null);
 
   const action = (event: string, data: any) => {
     switch (event) {
@@ -33,18 +34,30 @@ const WebSocketTodoList: React.FC<{ token: string; todos: any[] }> = ({
 
   useEffect(() => {
     // Open a WebSocket connection
-    const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
-    ws.onopen = () => {
-      console.log("WebSocket connection opened");
-      ws.send(JSON.stringify({ event: "get_todos" }));
+    const connect = () => {
+      const wsInstance = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+      wsInstance.onopen = () => {
+        console.log("WebSocket connection opened");
+        wsInstance.send(JSON.stringify({ event: "get_todos" }));
+      };
+      wsInstance.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        const data = JSON.parse(message.data);
+        action(message.event, data);
+      };
+      wsInstance.onclose = () => {
+        console.log("WebSocket connection closed");
+        setWs(null);
+        setTimeout(() => connect(), 3000);
+      };
     };
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      const data = JSON.parse(message.data);
-      action(message.event, data);
-    };
+
+    connect();
+
     return () => {
-      ws.close();
+      if (ws) {
+        ws.close();
+      }
     };
   }, []);
 
