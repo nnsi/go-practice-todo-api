@@ -60,32 +60,32 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("id")
-		userID := middleware.GetUserFromContext(r.Context())
-		todo, err := h.service.Show(id, userID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
+	id := r.PathValue("id")
+	userID := middleware.GetUserFromContext(r.Context())
+	todo, err := h.service.Show(id, userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 
-		var fields map[string]interface{}
-		if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
-			WriteJSONResponse(w, "Invalid JSON")
-			return
-		}
+	var fields map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
+		WriteJSONResponse(w, "Invalid JSON")
+		return
+	}
 
-		if title, ok := fields["title"].(string); ok {
-			todo.Title = title
-		}
-		if completed, ok := fields["completed"].(bool); ok {
-			todo.Completed = completed
-		}
-		todo, err = h.service.Update(id, todo.Title, todo.Completed, userID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		WriteJSONResponse(w, todo)
+	if title, ok := fields["title"].(string); ok {
+		todo.Title = title
+	}
+	if completed, ok := fields["completed"].(bool); ok {
+		todo.Completed = completed
+	}
+	todo, err = h.service.Update(id, todo.Title, todo.Completed, userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	WriteJSONResponse(w, todo)
 }
 
 func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {

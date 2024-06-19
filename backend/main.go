@@ -8,16 +8,17 @@ import (
 	"log"
 	"net/http"
 )
+
 const JWT_SECRET = "secret"
 
-func main() { 
+func main() {
 
 	dsn := "host=localhost user=postgres password=postgres dbname=todoapp port=5432 TimeZone=Asia/Tokyo"
 
 	notifier := infra.NewWebSocketNotifier()
 	notifier.Start()
 
-	todoRepo, err := repositories.NewTodoRDBRepository (dsn) 
+	todoRepo, err := repositories.NewTodoRDBRepository(dsn)
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
@@ -30,7 +31,7 @@ func main() {
 	}
 	userService := services.NewUserService(userRepo, JWT_SECRET)
 	authHandler := handlers.NewAuthHandler(userService)
-	
+
 	wsHandler := handlers.NewWebSocketHandler(notifier, todoService)
 
 	Routes(todoHandler, authHandler, wsHandler, userService)

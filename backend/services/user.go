@@ -21,8 +21,8 @@ func NewUserService(repo repositories.UserRepositoryInterface, jwtSecret string)
 
 func (s *UserService) Create(userDto *models.UserDTO) (*models.User, error) {
 	user := &models.User{
-		LoginID: userDto.LoginID,
-		Name:    userDto.Username,
+		LoginID:  userDto.LoginID,
+		Name:     userDto.Username,
 		Password: userDto.Password,
 	}
 	user.ID = GenerateULID()

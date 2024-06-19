@@ -9,22 +9,22 @@ import (
 )
 
 type TodoService struct {
-	repo repositories.TodoRepositoryInterface
+	repo     repositories.TodoRepositoryInterface
 	Notifier *infra.WebSocketNotifier
 }
 
 func NewTodoService(repo repositories.TodoRepositoryInterface, notifier *infra.WebSocketNotifier) *TodoService {
-	return &TodoService{repo: repo, Notifier : notifier}
+	return &TodoService{repo: repo, Notifier: notifier}
 }
 
-func (s *TodoService) Index(isShowDeleted bool,userID string) ([]models.Todo, error) {
+func (s *TodoService) Index(isShowDeleted bool, userID string) ([]models.Todo, error) {
 	if userID == "" {
 		return nil, errors.New("user not found")
 	}
 	return s.repo.FindAll(isShowDeleted, userID)
 }
 
-func (s *TodoService) Show(id string,userID string) (*models.Todo, error) {
+func (s *TodoService) Show(id string, userID string) (*models.Todo, error) {
 	return s.repo.FindByID(id, userID)
 }
 
@@ -73,7 +73,7 @@ func (s *TodoService) Update(id string, title string, completed bool, userID str
 	return todo, err
 }
 
-func (s *TodoService) Delete(id string,userID string) error {
+func (s *TodoService) Delete(id string, userID string) error {
 	err := s.repo.Delete(id, userID)
 
 	data, _err := json.Marshal(models.Todo{ID: id})
