@@ -46,7 +46,7 @@ func (s *UserService) CheckPasswordHash(password, hash string) bool {
 
 func (s *UserService) GenerateToken(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id":  user.ID,
+		"user_id":  user.LoginID,
 		"username": user.Name,
 		"exp":      time.Now().Add(time.Hour * 24 * 365).Unix(),
 	}
