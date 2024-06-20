@@ -37,7 +37,7 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
       if (wsRef.current) {
         wsRef.current.close();
       }
-      wsRef.current = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+      wsRef.current = new WebSocket(`${config.WS_URL}/ws?token=${token}`);
       wsRef.current.onopen = () => {
         console.log("WebSocket connection opened");
         wsManualClose.current = false;
