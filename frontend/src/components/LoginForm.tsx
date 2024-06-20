@@ -1,3 +1,5 @@
+import config from "../config";
+
 export const LoginForm: React.FC<{ setToken: (token: string) => void }> = ({
   setToken,
 }) => {
@@ -5,7 +7,7 @@ export const LoginForm: React.FC<{ setToken: (token: string) => void }> = ({
     <form
       action={async (formData) => {
         try {
-          const req = await fetch("http://localhost:8080/login", {
+          const req = await fetch(`${config.API_URL}/login`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

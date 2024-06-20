@@ -1,0 +1,15 @@
+# fly.toml app configuration file generated for go-practice-todo-app on 2024-06-21T04:00:58+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'go-practice-todo-app'
+primary_region = 'nrt'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[build]
+  dockerfile = "./backend/Dockerfile.prod"

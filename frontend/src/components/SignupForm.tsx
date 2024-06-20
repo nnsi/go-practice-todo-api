@@ -1,3 +1,5 @@
+import config from "../config";
+
 export const SignupForm: React.FC<{ setToken: (token: string) => void }> = ({
   setToken,
 }) => {
@@ -5,7 +7,7 @@ export const SignupForm: React.FC<{ setToken: (token: string) => void }> = ({
     <form
       action={async (formData: FormData) => {
         try {
-          const req = await fetch("http://localhost:8080/register", {
+          const req = await fetch(`${config.API_URL}/register`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

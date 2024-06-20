@@ -1,0 +1,46 @@
+name: Deploy Backend to Fly.io
+
+on:
+  push:
+    paths:
+      - "backend/**"
+    branches:
+      - "main"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./backend/Dockerfile.prod
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/my-app:latest
+
+      - name: Install Flyctl
+        run: |
+          curl -L https://fly.io/install.sh | sh
+          echo "/home/runner/.fly/bin" >> $GITHUB_PATH
+
+      - name: Deploy to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl auth token $FLY_API_TOKEN
+          flyctl deploy --remote-only --build-arg DB_HOST=${{ secrets.DB_HOST }} --build-arg DB_USER=${{ secrets.DB_USER }} --build-arg DB_PASSWORD=${{ secrets.DB_PASSWORD }} --build-arg DB_NAME=${{ secrets.DB_NAME }} --build-arg DB_PORT=${{ secrets.DB_PORT }} -a go-practice-todo-app

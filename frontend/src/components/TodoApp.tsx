@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import config from "../config";
 
 const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
   const [todos, setWsTodos] = useState([] as any[]);
@@ -72,7 +73,7 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
           <span
             onClick={async () => {
               try {
-                await fetch(`http://localhost:8080/todos/${todo.id}`, {
+                await fetch(`${config.API_URL}/todos/${todo.id}`, {
                   method: "PUT",
                   headers: {
                     "Content-Type": "application/json",
@@ -91,7 +92,7 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
           <button
             onClick={async () => {
               try {
-                await fetch(`http://localhost:8080/todos/${todo.id}`, {
+                await fetch(`${config.API_URL}/todos/${todo.id}`, {
                   method: "DELETE",
                   headers: {
                     Authorization: `Bearer ${token}`,
@@ -116,7 +117,7 @@ export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
       <form
         action={async (formData: FormData) => {
           try {
-            await fetch("http://localhost:8080/todos", {
+            await fetch(`${config.API_URL}/todos`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
