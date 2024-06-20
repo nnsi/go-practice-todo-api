@@ -1,19 +1,35 @@
 package main
 
 import (
+	"fmt"
 	"go-practice-todo/handlers"
 	"go-practice-todo/infra"
 	"go-practice-todo/repositories"
 	"go-practice-todo/services"
 	"log"
 	"net/http"
+	"os"
 )
 
 const JWT_SECRET = "secret"
 
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
 func main() {
 
-	dsn := "host=db user=postgres password=postgres dbname=todoapp port=5432 TimeZone=Asia/Tokyo"
+	DB_HOST := getEnv("DB_HOST", "db")
+	DB_USER := getEnv("DB_USER", "postgres")
+	DB_PASSWORD := getEnv("DB_PASSWORD", "postgres")
+	DB_NAME := getEnv("DB_NAME", "todoapp")
+	DB_PORT := getEnv("DB_PORT", "5432")
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s TimeZone=Asia/Tokyo", DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
 
 	notifier := infra.NewWebSocketNotifier()
 	notifier.Start()
