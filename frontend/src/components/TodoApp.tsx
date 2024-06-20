@@ -32,11 +32,11 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
   };
 
   useEffect(() => {
-    // Open a WebSocket connection
     const connect = () => {
-      const ws = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
-      wsRef.current = ws;
-
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      wsRef.current = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
       wsRef.current.onopen = () => {
         console.log("WebSocket connection opened");
         wsManualClose.current = false;
@@ -49,16 +49,19 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
       };
       wsRef.current.onclose = (e) => {
         console.log("WebSocket connection closed", wsManualClose.current, e);
-        if (!wsManualClose.current) setTimeout(() => connect(), 3000);
+        if (!wsManualClose.current) {
+          console.log("reconnecting");
+          setTimeout(() => connect(), 3000);
+        } else {
+          console.log("end of connection");
+        }
       };
     };
     connect();
 
     return () => {
-      if (wsRef.current) {
-        wsManualClose.current = true;
-        wsRef.current.close();
-      }
+      wsManualClose.current = true;
+      wsRef.current?.close();
     };
   }, []);
 
