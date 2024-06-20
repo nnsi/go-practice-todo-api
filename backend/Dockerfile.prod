@@ -14,7 +14,7 @@ COPY backend/ .
 RUN go build -o main .
 
 # Final stage
-FROM debian:bullseye-slim
+FROM ubuntu:22.04
 
 WORKDIR /app
 
