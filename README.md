@@ -5,7 +5,6 @@
 ```bash
 $ docker-compose build
 $ docker-compose up -d
-$ docker-compose exec backend air
 ```
 
 ### API 仕様
