@@ -56,6 +56,10 @@ func (s *UserService) GenerateToken(user *models.User) (string, error) {
 
 func (s *UserService) ValidateToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// HMACアルゴリズムを使用しているか確認
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
 		return []byte(s.jwtSecret), nil
 	})
 	return token, err
