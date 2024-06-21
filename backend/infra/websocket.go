@@ -3,6 +3,7 @@ package infra
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -57,55 +58,56 @@ func (n *WebSocketNotifier) BroadcastMessage(msg Message) {
 }
 
 func (n *WebSocketNotifier) Start() {
-	const maxRetries = 5
-	retries := 0
+	const maxRetries = 3
+	const retryInterval = time.Millisecond * 100
 
 	go func() {
 		for msg := range n.broadcast {
-			msg := msg
-			n.mu.Lock()
-
-			clients, ok := n.clients[msg.UserID]
-			if !ok {
-				log.Printf("No clients found for User ID: %s, retry: %d", msg.UserID, retries)
-				n.mu.Unlock()
-				retries++
-				if retries > maxRetries {
-					log.Printf("max retries exceeded, dropping message: %v", msg)
+			retries := 0
+			for {
+				n.mu.Lock()
+				clients, ok := n.clients[msg.UserID]
+				if !ok {
+					log.Printf("No clients found for User ID: %s", msg.UserID)
+					n.mu.Unlock()
+					retries++
+					if retries >= maxRetries {
+						log.Printf("Max retries reached for User ID: %s, giving up on message: %v", msg.UserID, msg)
+						break
+					}
+					time.Sleep(retryInterval)
 					continue
 				}
-				n.broadcast <- msg
-				continue
-			}
-			retries = 0
 
-			// ローカルコピーを作成してロックを早期に解放
-			clientList := make([]*websocket.Conn, 0, len(clients))
-			for client := range clients {
-				clientList = append(clientList, client)
-			}
-			n.mu.Unlock()
+				// ローカルコピーを作成してロックを早期に解放
+				clientList := make([]*websocket.Conn, 0, len(clients))
+				for client := range clients {
+					clientList = append(clientList, client)
+				}
+				n.mu.Unlock()
 
-			log.Printf("Broadcasting message to %d clients", len(clientList))
+				log.Printf("Broadcasting message to %d clients", len(clientList))
 
-			for _, client := range clientList {
-				go func(client *websocket.Conn) {
-					log.Printf("Sending message to client: %s", client.RemoteAddr())
+				for _, client := range clientList {
+					go func(client *websocket.Conn) {
+						log.Printf("Sending message to client: %s", client.RemoteAddr())
 
-					err := client.WriteJSON(msg)
-					if err != nil {
-						log.Printf("Error writing JSON to client: %v", err)
-						n.mu.Lock()
-						client.Close()
-						delete(n.clients[msg.UserID], client)
-						if len(n.clients[msg.UserID]) == 0 {
-							delete(n.clients, msg.UserID)
+						err := client.WriteJSON(msg)
+						if err != nil {
+							log.Printf("Error writing JSON to client: %v", err)
+							client.Close()
+							n.mu.Lock()
+							delete(n.clients[msg.UserID], client)
+							if len(n.clients[msg.UserID]) == 0 {
+								delete(n.clients, msg.UserID)
+							}
+							n.mu.Unlock()
+						} else {
+							log.Printf("Message successfully sent to client: %s", client.RemoteAddr())
 						}
-						n.mu.Unlock()
-					} else {
-						log.Printf("Message successfully sent to client: %s", client.RemoteAddr())
-					}
-				}(client)
+					}(client)
+				}
+				break
 			}
 		}
 	}()
