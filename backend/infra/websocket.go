@@ -57,7 +57,11 @@ func (n *WebSocketNotifier) Start() {
 			n.mu.Lock()
 			for client := range n.clients[msg.UserID] {
 				log.Printf("Sending message to client: %s", client.RemoteAddr())
-				client.SetWriteDeadline(time.Now().Add(3 * time.Second))
+
+				if err := client.SetWriteDeadline(time.Now().Add(1 * time.Second)); err != nil {
+					log.Printf("Error setting write deadline: %v", err)
+				}
+
 				err := client.WriteJSON(msg)
 				if err != nil {
 					log.Printf("Error writing JSON to client: %v", err)
