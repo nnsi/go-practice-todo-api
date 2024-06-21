@@ -46,7 +46,9 @@ func (n *WebSocketNotifier) UnregisterClient(userID string, ws *websocket.Conn) 
 }
 
 func (n *WebSocketNotifier) BroadcastMessage(msg Message) {
-	n.broadcast <- msg
+	go func() {
+		n.broadcast <- msg
+	}()
 }
 
 func (n *WebSocketNotifier) Start() {
@@ -56,23 +58,25 @@ func (n *WebSocketNotifier) Start() {
 			log.Printf("Broadcasting message: %v", msg)
 			//			n.mu.Lock()
 			for client := range n.clients[msg.UserID] {
-				log.Printf("Sending message to client: %s", client.RemoteAddr())
+				go func(client *websocket.Conn) {
+					log.Printf("Sending message to client: %s", client.RemoteAddr())
 
-				if err := client.SetWriteDeadline(time.Now().Add(1 * time.Second)); err != nil {
-					log.Printf("Error setting write deadline: %v", err)
-				}
-
-				err := client.WriteJSON(msg)
-				if err != nil {
-					log.Printf("Error writing JSON to client: %v", err)
-					client.Close()
-					delete(n.clients[msg.UserID], client)
-					if len(n.clients[msg.UserID]) == 0 {
-						delete(n.clients, msg.UserID)
+					if err := client.SetWriteDeadline(time.Now().Add(1 * time.Second)); err != nil {
+						log.Printf("Error setting write deadline: %v", err)
 					}
-				} else {
-					log.Printf("Message successfully sent to client: %s", client.RemoteAddr())
-				}
+
+					err := client.WriteJSON(msg)
+					if err != nil {
+						log.Printf("Error writing JSON to client: %v", err)
+						client.Close()
+						delete(n.clients[msg.UserID], client)
+						if len(n.clients[msg.UserID]) == 0 {
+							delete(n.clients, msg.UserID)
+						}
+					} else {
+						log.Printf("Message successfully sent to client: %s", client.RemoteAddr())
+					}
+				}(client)
 			}
 			//			n.mu.Unlock()
 		}
