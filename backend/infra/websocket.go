@@ -54,7 +54,7 @@ func (n *WebSocketNotifier) Start() {
 		for {
 			msg := <-n.broadcast
 			log.Printf("Broadcasting message: %v", msg)
-			n.mu.Lock()
+			//			n.mu.Lock()
 			for client := range n.clients[msg.UserID] {
 				log.Printf("Sending message to client: %s", client.RemoteAddr())
 
@@ -74,7 +74,7 @@ func (n *WebSocketNotifier) Start() {
 					log.Printf("Message successfully sent to client: %s", client.RemoteAddr())
 				}
 			}
-			n.mu.Unlock()
+			//			n.mu.Unlock()
 		}
 	}()
 }
