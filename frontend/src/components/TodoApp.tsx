@@ -1,35 +1,75 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+} from "react";
 import config from "../config";
 
-const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
-  const [todos, setWsTodos] = useState([] as any[]);
+type WebSocketTodoListProps = {
+  token: string;
+  todos: (Todo | null)[];
+  setTodos: React.Dispatch<React.SetStateAction<(Todo | null)[]>>;
+  isConnected: boolean;
+  setIsConnected: React.Dispatch<React.SetStateAction<boolean>>;
+  setOptimisticTodo: ({ action, todo }: { action: string; todo: Todo }) => void;
+};
+
+const WebSocketTodoList: React.FC<WebSocketTodoListProps> = ({
+  token,
+  todos,
+  setTodos,
+  isConnected,
+  setIsConnected,
+  setOptimisticTodo,
+}) => {
   const wsRef = useRef<WebSocket | null>(null);
   const wsManualClose = useRef(false);
 
   const action = (event: string, data: any) => {
     switch (event) {
       case "list":
-        setWsTodos(data);
+        setTodos(data);
         break;
       case "create":
-        setWsTodos((prev) => [...prev, data]);
+        setTodos((prev) => [...prev.filter((t) => t!.id !== data.id), data]);
         break;
       case "update":
-        setWsTodos((prev) =>
-          prev.map((t) => {
-            if (t.id === data.id) {
-              return data;
-            }
-            return t;
-          })
-        );
+        setTodos((prev) => prev.map((t) => (t!.id === data.id ? data : t)));
         break;
       case "delete":
-        setWsTodos((prev) => prev.filter((t) => t.id !== data.id));
+        setTodos((prev) => prev.filter((t) => t!.id !== data.id));
         break;
       default:
         break;
     }
+  };
+
+  const updateTodo = async (todo: Todo) => {
+    if (!isConnected) return;
+    startTransition(async () => {
+      try {
+        setOptimisticTodo({
+          action: "update",
+          todo: {
+            id: todo.id,
+            title: todo.title,
+            completed: !todo.completed,
+          },
+        });
+        await fetch(`${config.API_URL}/todos/${todo.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ completed: !todo.completed }),
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    });
   };
 
   useEffect(() => {
@@ -41,6 +81,7 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
       wsRef.current.onopen = () => {
         console.log("WebSocket connection opened");
         wsManualClose.current = false;
+        setIsConnected(true);
         wsRef.current?.send(JSON.stringify({ event: "get_todos" }));
       };
       wsRef.current.onmessage = (event) => {
@@ -51,6 +92,7 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
       wsRef.current.onclose = (e) => {
         console.log("WebSocket connection closed", wsManualClose.current, e);
         if (!wsManualClose.current) {
+          setIsConnected(false);
           console.log("reconnecting");
           setTimeout(() => connect(), 3000);
         } else {
@@ -70,53 +112,94 @@ const WebSocketTodoList: React.FC<{ token: string }> = ({ token }) => {
     <ul>
       {todos.map((todo: any) => (
         <li key={todo.id}>
-          <span
-            onClick={async () => {
-              try {
-                await fetch(`${config.API_URL}/todos/${todo.id}`, {
-                  method: "PUT",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({ completed: !todo.completed }),
-                });
-              } catch (e) {
-                console.error(e);
-              }
-            }}
-          >
-            {todo.title}
-          </span>
+          <span>{todo.title}</span>
           {todo.completed && "✅"}
           <button
             onClick={async () => {
-              try {
-                await fetch(`${config.API_URL}/todos/${todo.id}`, {
-                  method: "DELETE",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
-              } catch (e) {
-                console.error(e);
-              }
+              if ("ontouchend" in document) return;
+              await updateTodo(todo);
             }}
+            onTouchEnd={async () => {
+              await updateTodo(todo);
+            }}
+            disabled={!isConnected}
+          >
+            {!todo.completed ? "complete" : "uncomplete"}
+          </button>
+          <button
+            onClick={async () => {
+              startTransition(async () => {
+                try {
+                  await fetch(`${config.API_URL}/todos/${todo.id}`, {
+                    method: "DELETE",
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+                } catch (e) {
+                  console.error(e);
+                }
+              });
+            }}
+            disabled={!isConnected}
           >
             DELETE
           </button>
+          {todo.sending && "⏳"}
         </li>
       ))}
     </ul>
   );
 };
 
-export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
+type Todo = {
+  id: string;
+  title: string;
+  completed: boolean;
+  sending?: boolean;
+};
+
+type TodoAppProps = {
+  token: string;
+};
+
+export const TodoApp: React.FC<TodoAppProps> = ({ token }) => {
+  const [todos, setTodos] = useState<(Todo | null)[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [optimisticTodos, setOptimisticTodo] = useOptimistic(
+    todos,
+    (state, { action, todo }: { action: string; todo: Todo }) => {
+      const sendingTodo = {
+        ...todo,
+        sending: true,
+      };
+      switch (action) {
+        case "create":
+          return [...state, sendingTodo];
+        case "update":
+          return state.map((t) => (t!.id === todo.id ? sendingTodo : t));
+        case "delete":
+          return state.filter((t) => t!.id !== todo.id);
+        default:
+          return state;
+      }
+    }
+  );
+
   return (
     <>
       <form
         action={async (formData: FormData) => {
           try {
+            setOptimisticTodo({
+              action: "create",
+              todo: {
+                id: "optimistic_todo",
+                title: formData.get("title") as string,
+                completed: false,
+              },
+            });
+            await new Promise((res) => setTimeout(res, 1000));
             await fetch(`${config.API_URL}/todos`, {
               method: "POST",
               headers: {
@@ -132,9 +215,18 @@ export const TodoApp: React.FC<{ token: string }> = ({ token }) => {
         }}
       >
         <input type="text" name="title" />
-        <button type="submit">Add</button>
+        <button type="submit" disabled={!isConnected}>
+          Add
+        </button>
       </form>
-      <WebSocketTodoList token={token} />
+      <WebSocketTodoList
+        token={token}
+        todos={optimisticTodos}
+        setTodos={setTodos}
+        isConnected={isConnected}
+        setIsConnected={setIsConnected}
+        setOptimisticTodo={setOptimisticTodo}
+      />
     </>
   );
 };
