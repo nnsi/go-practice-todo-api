@@ -55,13 +55,17 @@ func (n *WebSocketNotifier) Start() {
 			log.Printf("Broadcasting message: %v", msg)
 			n.mu.Lock()
 			for client := range n.clients[msg.UserID] {
+				log.Printf("Sending message to client: %s", client.RemoteAddr())
 				err := client.WriteJSON(msg)
 				if err != nil {
+					log.Printf("Error writing JSON to client: %v", err)
 					client.Close()
 					delete(n.clients[msg.UserID], client)
 					if len(n.clients[msg.UserID]) == 0 {
 						delete(n.clients, msg.UserID)
 					}
+				} else {
+					log.Printf("Message successfully sent to client: %s", client.RemoteAddr())
 				}
 			}
 			n.mu.Unlock()
