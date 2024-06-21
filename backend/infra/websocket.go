@@ -34,7 +34,7 @@ func (n *WebSocketNotifier) RegisterClient(userID string, ws *websocket.Conn) {
 		n.clients[userID] = make(map[*websocket.Conn]bool)
 	}
 	n.clients[userID][ws] = true
-	log.Printf("Registered client: %s, User ID: %s", ws.RemoteAddr(), userID)
+	log.Printf("Registered client: %s, User ID: %s, Clients: %d", ws.RemoteAddr(), userID, len(n.clients[userID]))
 }
 
 func (n *WebSocketNotifier) UnregisterClient(userID string, ws *websocket.Conn) {
@@ -59,15 +59,21 @@ func (n *WebSocketNotifier) BroadcastMessage(msg Message) {
 
 func (n *WebSocketNotifier) Start() {
 	go func() {
-		for {
-			msg := <-n.broadcast
-			log.Printf("Broadcasting message: %v", msg)
+		for msg := range n.broadcast {
+			msg := msg
 			//			n.mu.Lock()
-			for client := range n.clients[msg.UserID] {
+			clients, ok := n.clients[msg.UserID]
+			if !ok {
+				log.Printf("No clients found for User ID: %s", msg.UserID)
+				//		n.mu.Unlock()
+				continue
+			}
+			log.Printf("Broadcasting message to %d clients", len(clients))
+			for client := range clients {
 				go func(client *websocket.Conn) {
 					log.Printf("Sending message to client: %s", client.RemoteAddr())
 
-					if err := client.SetWriteDeadline(time.Now().Add(1 * time.Second)); err != nil {
+					if err := client.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
 						log.Printf("Error setting write deadline: %v", err)
 					}
 
