@@ -14,12 +14,6 @@ type WebSocketNotifier struct {
 	mu        sync.Mutex
 }
 
-type Message struct {
-	Event  string `json:"event"`
-	Data   string `json:"data"`
-	UserID string `json:"user_id"`
-}
-
 func NewWebSocketNotifier() *WebSocketNotifier {
 	return &WebSocketNotifier{
 		clients:   make(map[string]map[*websocket.Conn]bool),

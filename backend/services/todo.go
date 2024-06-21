@@ -11,10 +11,10 @@ import (
 
 type TodoService struct {
 	repo     repositories.TodoRepositoryInterface
-	Notifier *infra.WebSocketNotifier
+	Notifier infra.NotifierInterface
 }
 
-func NewTodoService(repo repositories.TodoRepositoryInterface, notifier *infra.WebSocketNotifier) *TodoService {
+func NewTodoService(repo repositories.TodoRepositoryInterface, notifier infra.NotifierInterface) *TodoService {
 	return &TodoService{repo: repo, Notifier: notifier}
 }
 

@@ -12,7 +12,7 @@ import (
 )
 
 type WebSocketHandler struct {
-	Notifier    *infra.WebSocketNotifier
+	Notifier    infra.NotifierInterface
 	TodoService *services.TodoService
 }
 
@@ -24,7 +24,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func NewWebSocketHandler(notifier *infra.WebSocketNotifier, todoService *services.TodoService) *WebSocketHandler {
+func NewWebSocketHandler(notifier infra.NotifierInterface, todoService *services.TodoService) *WebSocketHandler {
 	return &WebSocketHandler{
 		Notifier:    notifier,
 		TodoService: todoService,
