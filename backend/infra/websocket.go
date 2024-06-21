@@ -1,6 +1,7 @@
 package infra
 
 import (
+	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -21,7 +22,7 @@ type Message struct {
 func NewWebSocketNotifier() *WebSocketNotifier {
 	return &WebSocketNotifier{
 		clients:   make(map[string]map[*websocket.Conn]bool),
-		broadcast: make(chan Message),
+		broadcast: make(chan Message, 100),
 	}
 }
 
@@ -51,6 +52,7 @@ func (n *WebSocketNotifier) Start() {
 	go func() {
 		for {
 			msg := <-n.broadcast
+			log.Printf("Broadcasting message: %v", msg)
 			n.mu.Lock()
 			for client := range n.clients[msg.UserID] {
 				err := client.WriteJSON(msg)

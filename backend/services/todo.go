@@ -6,6 +6,7 @@ import (
 	"go-practice-todo/infra"
 	"go-practice-todo/models"
 	"go-practice-todo/repositories"
+	"log"
 )
 
 type TodoService struct {
@@ -42,6 +43,7 @@ func (s *TodoService) Create(title string, userID string) (*models.Todo, error) 
 		return todo, _err
 	}
 
+	log.Println("Created: ", string(data))
 	s.Notifier.BroadcastMessage(infra.Message{
 		Event:  "create",
 		Data:   string(data),
@@ -64,6 +66,7 @@ func (s *TodoService) Update(id string, title string, completed bool, userID str
 		return todo, _err
 	}
 
+	log.Println("Updated:: ", string(data))
 	s.Notifier.BroadcastMessage(infra.Message{
 		Event:  "update",
 		Data:   string(data),
@@ -81,6 +84,7 @@ func (s *TodoService) Delete(id string, userID string) error {
 		return err
 	}
 
+	log.Println("Deleted: ", string(data))
 	s.Notifier.BroadcastMessage(infra.Message{
 		Event:  "delete",
 		Data:   string(data),
