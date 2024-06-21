@@ -58,7 +58,7 @@ const WebSocketTodoList: React.FC<WebSocketTodoListProps> = ({
             completed: !todo.completed,
           },
         });
-        await fetch(`${config.API_URL}/todos/${todo.id}`, {
+        const req = await fetch(`${config.API_URL}/todos/${todo.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -66,6 +66,24 @@ const WebSocketTodoList: React.FC<WebSocketTodoListProps> = ({
           },
           body: JSON.stringify({ completed: !todo.completed }),
         });
+        const res = await req.json();
+        setTodos((prev) => prev.map((t) => (t!.id === res.id ? res : t)));
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  };
+
+  const deleteTodo = async (todo: Todo) => {
+    startTransition(async () => {
+      try {
+        await fetch(`${config.API_URL}/todos/${todo.id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setTodos((prev) => prev.filter((t) => t!.id !== todo.id));
       } catch (e) {
         console.error(e);
       }
@@ -128,22 +146,18 @@ const WebSocketTodoList: React.FC<WebSocketTodoListProps> = ({
           </button>
           <button
             onClick={async () => {
-              startTransition(async () => {
-                try {
-                  await fetch(`${config.API_URL}/todos/${todo.id}`, {
-                    method: "DELETE",
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  });
-                } catch (e) {
-                  console.error(e);
-                }
-              });
+              await deleteTodo(todo);
             }}
             disabled={!isConnected}
           >
             DELETE
+          </button>
+          <button
+            onClick={() => {
+              console.log(todo);
+            }}
+          >
+            LOG
           </button>
           {todo.sending && "⏳"}
         </li>
@@ -200,7 +214,7 @@ export const TodoApp: React.FC<TodoAppProps> = ({ token }) => {
               },
             });
             await new Promise((res) => setTimeout(res, 1000));
-            await fetch(`${config.API_URL}/todos`, {
+            const req = await fetch(`${config.API_URL}/todos`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -208,6 +222,8 @@ export const TodoApp: React.FC<TodoAppProps> = ({ token }) => {
               },
               body: JSON.stringify({ title: formData.get("title") }),
             });
+            const res = await req.json();
+            setTodos((prev) => [...prev.filter((t) => t!.id !== res.id), res]);
           } catch (e) {
             console.error(e);
           }

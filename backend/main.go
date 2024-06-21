@@ -28,10 +28,12 @@ func main() {
 	DB_PASSWORD := getEnv("DB_PASSWORD", "postgres")
 	DB_NAME := getEnv("DB_NAME", "todoapp")
 	DB_PORT := getEnv("DB_PORT", "5432")
+	REDIS_ADDR := getEnv("REDIS_ADDR", "redis://redis:6379")
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s TimeZone=Asia/Tokyo", DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
 
-	notifier := infra.NewWebSocketNotifier()
+	//notifier := infra.NewWebSocketNotifier()
+	notifier := infra.NewRedisNotifier(REDIS_ADDR, "todos_channel")
 	notifier.Start()
 
 	todoRepo, err := repositories.NewTodoRDBRepository(dsn)
