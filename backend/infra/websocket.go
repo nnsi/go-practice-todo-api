@@ -57,6 +57,9 @@ func (n *WebSocketNotifier) BroadcastMessage(msg Message) {
 }
 
 func (n *WebSocketNotifier) Start() {
+	const maxRetries = 5
+	retries := 0
+
 	go func() {
 		for msg := range n.broadcast {
 			msg := msg
@@ -64,10 +67,17 @@ func (n *WebSocketNotifier) Start() {
 
 			clients, ok := n.clients[msg.UserID]
 			if !ok {
-				log.Printf("No clients found for User ID: %s", msg.UserID)
+				log.Printf("No clients found for User ID: %s, retry: %d", msg.UserID, retries)
 				n.mu.Unlock()
+				retries++
+				if retries > maxRetries {
+					log.Printf("max retries exceeded, dropping message: %v", msg)
+					continue
+				}
+				n.broadcast <- msg
 				continue
 			}
+			retries = 0
 
 			// ローカルコピーを作成してロックを早期に解放
 			clientList := make([]*websocket.Conn, 0, len(clients))
@@ -75,6 +85,7 @@ func (n *WebSocketNotifier) Start() {
 				clientList = append(clientList, client)
 			}
 			n.mu.Unlock()
+
 			log.Printf("Broadcasting message to %d clients", len(clientList))
 
 			for _, client := range clientList {
@@ -84,11 +95,13 @@ func (n *WebSocketNotifier) Start() {
 					err := client.WriteJSON(msg)
 					if err != nil {
 						log.Printf("Error writing JSON to client: %v", err)
+						n.mu.Lock()
 						client.Close()
 						delete(n.clients[msg.UserID], client)
 						if len(n.clients[msg.UserID]) == 0 {
 							delete(n.clients, msg.UserID)
 						}
+						n.mu.Unlock()
 					} else {
 						log.Printf("Message successfully sent to client: %s", client.RemoteAddr())
 					}
