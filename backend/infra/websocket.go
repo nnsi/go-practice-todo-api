@@ -3,7 +3,6 @@ package infra
 import (
 	"log"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -61,21 +60,26 @@ func (n *WebSocketNotifier) Start() {
 	go func() {
 		for msg := range n.broadcast {
 			msg := msg
-			//			n.mu.Lock()
+			n.mu.Lock()
+
 			clients, ok := n.clients[msg.UserID]
 			if !ok {
 				log.Printf("No clients found for User ID: %s", msg.UserID)
-				//		n.mu.Unlock()
+				n.mu.Unlock()
 				continue
 			}
-			log.Printf("Broadcasting message to %d clients", len(clients))
+
+			// ローカルコピーを作成してロックを早期に解放
+			clientList := make([]*websocket.Conn, 0, len(clients))
 			for client := range clients {
+				clientList = append(clientList, client)
+			}
+			n.mu.Unlock()
+			log.Printf("Broadcasting message to %d clients", len(clientList))
+
+			for _, client := range clientList {
 				go func(client *websocket.Conn) {
 					log.Printf("Sending message to client: %s", client.RemoteAddr())
-
-					if err := client.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
-						log.Printf("Error setting write deadline: %v", err)
-					}
 
 					err := client.WriteJSON(msg)
 					if err != nil {
@@ -90,7 +94,6 @@ func (n *WebSocketNotifier) Start() {
 					}
 				}(client)
 			}
-			//			n.mu.Unlock()
 		}
 	}()
 }
